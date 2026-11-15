@@ -59,3 +59,32 @@ Restart the server if you still have Lesson 1 running. Create a blank **POST** r
 ```
 
 The bearer token is the merchant app's demo credential. The card token is a fake payment method that determines the simulated issuer decision. **201 Created** tells you a record was created for the attempt, including when the issuer declines. New payment records live in memory until you stop the server.
+
+## Lesson 3 · Reuse the server address and pass the payment ID
+
+### Reuse the server address
+
+1. Save both requests in a collection named **Postman Payments Primer**. An existing personal workspace is fine.
+2. In the collection's **Variables** tab, set `base_url` to `http://127.0.0.1:3100` and save.
+3. Change the POST URL to `{{base_url}}/payments`. In the GET URL, replace the server address with `{{base_url}}` and keep the payment ID you copied earlier. Save and send the GET. A fresh **200 OK** confirms the variable resolved. If the placeholder is red, check the spelling, the saved variable value, and that the request belongs to the collection.
+
+Both requests now get their server address from one place. For the first check, keep copying the ID manually so you can see what the script will replace.
+
+### Save the ID automatically
+
+Open the POST request's **Scripts → Post-response** tab, paste this script, and save.
+
+```javascript
+pm.collectionVariables.unset("payment_id");
+
+if (pm.response.code === 201) {
+  const { paymentId } = pm.response.json();
+  if (paymentId) {
+    pm.collectionVariables.set("payment_id", paymentId);
+  }
+}
+```
+
+The script runs after Postman receives the response. It clears the old ID first, then saves the new one from a successful creation response. A pre-request script runs before sending, when the response ID isn't available yet.
+
+Send the POST and check the collection's **Variables** tab for `payment_id`. Then change the GET URL to `{{base_url}}/payments/{{payment_id}}`, save, and send. Expect **200 OK** and the same ID and decision returned by the POST.

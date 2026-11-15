@@ -40,3 +40,22 @@ If Postman can't connect, check that the terminal is still running the server an
 ## Where the code lives
 
 `api/server.js` holds the sample payment and handles the lookup. Node.js provides the HTTP server, so there's no package install step.
+
+## Lesson 2 · Create a payment and look it up
+
+Restart the server if you still have Lesson 1 running. Create a blank **POST** request to `http://127.0.0.1:3100/payments`.
+
+1. Under **Body → raw → JSON**, paste the body below. Send it once and expect **401 Unauthorized**. The demo gateway needs a credential to identify the merchant app.
+2. Under **Authorization**, choose **Bearer Token** and enter `demo-merchant-token`. Send again and expect **201 Created** with `"authorisationStatus": "approved"`.
+3. Copy the returned `paymentId`. In a separate **GET** request, replace `pay_demo_001` in the Lesson 1 URL with that ID. Send it and expect **200 OK** with the same payment details.
+4. Change `cardToken` to `demo_decline` in the **POST** and send again. Expect **201 Created** with `"authorisationStatus": "declined"`. Try looking up this new ID too.
+
+```json
+{
+  "amountMinor": 2499,
+  "currency": "AUD",
+  "cardToken": "demo_approve"
+}
+```
+
+The bearer token is the merchant app's demo credential. The card token is a fake payment method that determines the simulated issuer decision. **201 Created** tells you a record was created for the attempt, including when the issuer declines. New payment records live in memory until you stop the server.

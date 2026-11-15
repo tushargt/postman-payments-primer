@@ -72,7 +72,7 @@ Both requests now get their server address from one place. For the first check, 
 
 ### Save the ID automatically
 
-Open the POST request's **Scripts → Post-response** tab, paste this script, and save.
+Open the POST request's **Scripts → After response** tab, paste this script, and save.
 
 ```javascript
 pm.collectionVariables.unset("payment_id");
@@ -85,6 +85,25 @@ if (pm.response.code === 201) {
 }
 ```
 
-The script runs after Postman receives the response. It clears the old ID first, then saves the new one from a successful creation response. A pre-request script runs before sending, when the response ID isn't available yet.
+The script runs after Postman receives the response. It clears the old ID first, then saves the new one from a successful creation response. A Before request script runs before sending, when the response ID isn't available yet.
 
 Send the POST and check the collection's **Variables** tab for `payment_id`. Then change the GET URL to `{{base_url}}/payments/{{payment_id}}`, save, and send. Expect **200 OK** and the same ID and decision returned by the POST.
+
+### Check that GET returns the right payment
+
+In the GET request, open **Scripts → After response** and add this test.
+
+```javascript
+pm.test("GET returns the payment created by POST", function () {
+  pm.response.to.have.status(200);
+
+  const expectedId = pm.collectionVariables.get("payment_id");
+  pm.expect(pm.response.json().paymentId).to.equal(expectedId);
+});
+```
+
+Send the POST and then the GET. Open **Test Results** and expect **1/1**.
+
+Try a wrong-payment lookup. Leave the script and the captured `payment_id` as they are, but temporarily change the GET URL to `{{base_url}}/payments/pay_demo_001`. The API still returns **200 OK** because the sample payment exists. The test fails because its ID differs from the one the POST created. Restore `{{base_url}}/payments/{{payment_id}}`, save, and send again to see the test pass.
+
+[Wrong payment: 200 OK, 0/1 passed](guide/screenshots/wrong-payment.png) · [Expected payment: 200 OK, 1/1 passed](guide/screenshots/get-assertion.png)

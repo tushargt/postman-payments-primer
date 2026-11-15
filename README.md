@@ -107,3 +107,36 @@ Send the POST and then the GET. Open **Test Results** and expect **1/1**.
 Try a wrong-payment lookup. Leave the script and the captured `payment_id` as they are, but temporarily change the GET URL to `{{base_url}}/payments/pay_demo_001`. The API still returns **200 OK** because the sample payment exists. The test fails because its ID differs from the one the POST created. Restore `{{base_url}}/payments/{{payment_id}}`, save, and send again to see the test pass.
 
 [Wrong payment: 200 OK, 0/1 passed](guide/screenshots/wrong-payment.png) · [Expected payment: 200 OK, 1/1 passed](guide/screenshots/get-assertion.png)
+
+## Lesson 4 · Run the collection
+
+1. With the demo API running, open the collection menu and choose **Run**.
+2. Select **Functional**, **Local**, and **1** iteration. In **Run order**, put **POST create payment** above **GET payments** so the POST saves the ID before the GET uses it.
+3. Click **Start run**. Expect POST **201 Created**, GET **200 OK**, and **1 passed**, **0 failed**.
+
+The POST script stores the ID. The GET contains the assertion, so the runner lists one test overall.
+
+[Open Runner](guide/screenshots/runner-menu.png) · [Initial order](guide/screenshots/runner-initial-order.png) · [Correct order](guide/screenshots/runner-correct-order.png) · [Run results](guide/screenshots/runner-results.png)
+
+## Lesson 5 · Review an AI-generated test
+
+Use Postman's **Ask AI** to draft two checks for the POST request's **Scripts → After response** tab. Ask it to preserve the existing script that saves `payment_id`, check for **201 Created**, and compare the returned decision with the expected decision for the request's demo card token.
+
+Review the proposed change before approving. The example correctly maps `demo_approve` to `approved` and `demo_decline` to `declined`. Its fallback only checks whether the decision is a string for an unknown token. Ask for a revision that fails explicitly when the request token has no expected decision. A separate negative test could check that the API returns **400 Bad Request** for an unknown token.
+
+[Proposed change](guide/screenshots/ai-proposed-change.png) · [Fallback to revise](guide/screenshots/ai-fallback-review.png)
+
+After applying the revised tests, send the POST once with each card token.
+
+| Card token | HTTP status | Payment decision | Test results |
+| --- | --- | --- | --- |
+| `demo_approve` | `201 Created` | `approved` | 2/2 passed |
+| `demo_decline` | `201 Created` | `declined` | 2/2 passed |
+
+An expected decline passes because the returned decision matches the scenario.
+
+[Approval run](guide/screenshots/ai-test-approved.png) · [Decline run](guide/screenshots/ai-test-declined.png)
+
+Run the collection again with POST first and GET second. Expect **3 passed, 0 failed**. The POST checks the status and payment decision, and the GET checks that the lookup returns the payment created in the same run.
+
+[Runner results with all three checks](guide/screenshots/ai-runner-results.png)

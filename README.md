@@ -166,3 +166,5 @@ The demo token is safe to share. For real credentials, use a secret store such a
 Use **Import** in Postman to import both the [collection](postman/payments.postman_collection.json) and the [Local Demo environment](postman/local-demo.postman_environment.json). Use a separate workspace to try the import alongside your hand-built requests.
 
 Start the API, select **Local Demo**, and run the imported collection locally with **POST before GET**. Expect **3 passed, 0 failed**. The imported `payment_id` starts empty. The POST fills it in during the run. The POST defaults to `demo_approve`. Change the body to `demo_decline` to try the other outcome.
+
+[Example run after importing both files from GitHub](guide/screenshots/fresh-import-run.png)

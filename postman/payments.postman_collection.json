@@ -1,0 +1,106 @@
+{
+  "info": {
+    "name": "Postman Payments Primer",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Create payment",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/payments",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "demo-merchant-token",
+              "type": "string"
+            }
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"amountMinor\": 2499,\n  \"currency\": \"AUD\",\n  \"cardToken\": \"demo_approve\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// ── existing: clear & save payment_id ──────────────────────────────────────",
+              "pm.collectionVariables.unset(\"payment_id\");",
+              "",
+              "if (pm.response.code === 201) {",
+              "  const { paymentId } = pm.response.json();",
+              "  pm.collectionVariables.set(\"payment_id\", paymentId);",
+              "}",
+              "",
+              "// ── status check ────────────────────────────────────────────────────────────",
+              "pm.test(\"Status code is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "// ── authorisationStatus matches cardToken ───────────────────────────────────",
+              "pm.test(\"authorisationStatus matches cardToken\", function () {",
+              "  const cardToken = JSON.parse(pm.request.body.raw).cardToken;",
+              "  const { authorisationStatus } = pm.response.json();",
+              "",
+              "  const expected = {",
+              "    demo_approve: \"approved\",",
+              "    demo_decline: \"declined\",",
+              "  };",
+              "",
+              "  pm.expect(",
+              "    expected,",
+              "    `Unrecognised cardToken \"${cardToken}\" — add it to the expected map`",
+              "  ).to.have.own.property(cardToken);",
+              "",
+              "  pm.expect(authorisationStatus).to.eql(",
+              "    expected[cardToken],",
+              "    `Expected authorisationStatus \"${expected[cardToken]}\" for cardToken \"${cardToken}\", got \"${authorisationStatus}\"`",
+              "  );",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Look up payment",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/payments/{{payment_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"GET returns the payment created by POST\", function () {",
+              "  pm.response.to.have.status(200);",
+              "",
+              "  const expectedId = pm.collectionVariables.get(\"payment_id\");",
+              "  pm.expect(pm.response.json().paymentId).to.equal(expectedId);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "payment_id",
+      "value": ""
+    }
+  ]
+}

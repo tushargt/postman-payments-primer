@@ -160,3 +160,9 @@ If `{{base_url}}` is unresolved, check that **Local Demo** is selected for the r
 - APIs can also use **API keys**, **Basic auth** (a username and password), or **OAuth 2.0**, which can issue scoped access tokens. Use the scheme the API documents.
 
 The demo token is safe to share. For real credentials, use a secret store such as Postman Vault. Keep real tokens and card data out of exports, screenshots, Git, and AI prompts. An environment variable is a way to supply a value. Store sensitive values separately.
+
+## Import the finished workflow
+
+Use **Import** in Postman to import both the [collection](postman/payments.postman_collection.json) and the [Local Demo environment](postman/local-demo.postman_environment.json). Use a separate workspace to try the import alongside your hand-built requests.
+
+Start the API, select **Local Demo**, and run the imported collection locally with **POST before GET**. Expect **3 passed, 0 failed**. The imported `payment_id` starts empty. The POST fills it in during the run. The POST defaults to `demo_approve`. Change the body to `demo_decline` to try the other outcome.

@@ -1,5 +1,7 @@
 # Did this payment get approved?
 
+For a visual walkthrough, open `guide/index.html` in your browser from a local copy of this repo.
+
 ## The payment story
 
 Shopper pays → Merchant sends a request through the gateway → Issuer decides → Merchant receives the decision

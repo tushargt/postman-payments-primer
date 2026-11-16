@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Postman Payments Primer</title>
+<style>
+:root{color-scheme:light;font:18px/1.55 system-ui,sans-serif;color:#192f29;background:#f1f5ed}
+*{box-sizing:border-box}
+main{width:min(880px,calc(100% - 32px));margin:3rem auto}
+header,section{padding:clamp(1rem,4vw,2.5rem);margin-bottom:1rem;border-radius:14px;background:#fff}
+header{background:#173b32;color:#fff}
+header a{color:#ddf4af}
+h1{font-size:clamp(2rem,6vw,3.6rem);line-height:1.08;margin:.3em 0}
+h2{line-height:1.2;margin-top:0}
+a{color:#175d49;text-underline-offset:.16em}
+nav a{display:inline-block;margin:.35rem 1rem .35rem 0}
+pre{overflow:auto;background:#142d26;color:#fff;padding:1rem;border-radius:8px}
+figure{margin:1rem 0}
+img{display:block;max-width:100%;height:auto;border-radius:8px}
+figcaption{font-size:.9rem;margin-top:.4rem}
+summary{cursor:pointer;font-weight:650}
+.flow{padding:.8rem;background:#e9f2dd;border-radius:8px}
+
+[hidden]{display:none!important}
+.controls{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.75rem 0}
+button{font:inherit;padding:.4em .85em;border:1px solid #175d49;border-radius:8px;background:#fff;color:#175d49;cursor:pointer}
+button:disabled{opacity:.45;cursor:default}
+nav a[aria-current="step"]{font-weight:bold;text-decoration-thickness:3px}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.9rem}
+th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding:.45rem;overflow-wrap:anywhere}
+.flow li{margin:.6rem 0 .6rem 1.4rem}
+</style>
+</head>
+<body><main>
+<header>
+<p>Postman Payments Primer</p>
+<h1>Did this payment get approved?</h1>
+<p>Take a five-minute tour to see the payment flow. Then follow along in Postman when you’re ready.</p>
+<nav aria-label="Lessons"><a href="#story">Story</a><a href="#requests">API calls</a><a href="#manual">Manual demo</a><a href="#improve">Improvements</a><a href="#practice">Follow along</a><a href="#chain">Variables</a><a href="#run">Runner</a><a href="#ai">Ask AI</a><a href="#environment">Environment</a><a href="#import">Import</a></nav>
+</header>
+<div class="controls" hidden><button type="button" id="previous">Back</button><span id="progress" aria-live="polite"></span><button type="button" id="next">Next</button></div>
+<section id="story"><h2>A shopper pays A$24.99. Was it approved?</h2>
+<p>You’re on the merchant’s team. Your checkout has sent a payment request. You want to see the decision and confirm you’re looking at the right payment.</p>
+<ol class="flow">
+<li><strong>Merchant → Gateway · POST /payments</strong><br>Submit the payment attempt.</li>
+<li><strong>Gateway ↔ Issuer</strong><br>The card issuer decides whether to approve it. Our local demo simulates that decision.</li>
+<li><strong>Gateway → Merchant</strong><br>Return a payment ID and the decision.</li>
+<li><strong>Merchant → Gateway · GET /payments/{paymentId}</strong><br>Use the ID to look up that same payment.</li>
+</ol></section>
+<section id="requests"><h2>What goes into each request?</h2>
+<p>Both calls go to <code>http://127.0.0.1:3100</code>, the mock gateway running on your computer.</p>
+<table><thead><tr><th scope="col">Part</th><th scope="col">POST creates</th><th scope="col">GET looks up</th></tr></thead><tbody>
+<tr><th scope="row">Path</th><td><code>/payments</code></td><td><code>/payments/{paymentId}</code></td></tr>
+<tr><th scope="row">Parameters</th><td>None</td><td>Payment ID in the path. No query parameters.</td></tr>
+<tr><th scope="row">Body</th><td>JSON with the amount in cents, currency and demo card token</td><td>None</td></tr>
+<tr><th scope="row">Auth</th><td>Bearer token <code>demo-merchant-token</code></td><td>None for this demo</td></tr>
+</tbody></table>
+<pre><code>{
+  "amountMinor": 2499,
+  "currency": "AUD",
+  "cardToken": "demo_approve"
+}</code></pre>
+<p>The bearer token lets the merchant call the demo API. The card token selects a simulated issuer decision. Those values serve different purposes.</p></section>
+<section id="manual"><h2>See the manual Postman flow</h2>
+<p>Sample walkthrough. You can read both examples without running the API.</p>
+<h3>1. Create a payment</h3>
+<p>In a blank Postman tab, select <strong>POST</strong> and paste <code>http://127.0.0.1:3100/payments</code>. In <strong>Body → raw → JSON</strong>, enter the body from the previous slide. Under <strong>Authorization → Bearer Token</strong>, enter <code>demo-merchant-token</code> and send.</p>
+<pre><code>201 Created
+{
+  "paymentId": "pay_223402da-f6a9-4504-81fa-a7217498d920",
+  "amountMinor": 2499,
+  "currency": "AUD",
+  "authorisationStatus": "approved"
+}</code></pre>
+<h3>2. Copy the ID into a lookup</h3>
+<p>Open another blank tab, select <strong>GET</strong> and paste the full URL with the ID you just received.</p>
+<pre><code>GET http://127.0.0.1:3100/payments/pay_223402da-f6a9-4504-81fa-a7217498d920
+
+200 OK
+Same payment ID, amount and approval decision</code></pre>
+<p><strong>201 Created</strong> means the POST recorded a payment attempt, even for a decline. <strong>200 OK</strong> means the GET found the record. The decision lives in <code>authorisationStatus</code>.</p>
+</section>
+<section id="improve"><h2>Make the same flow repeatable</h2>
+<ol><li><strong>Paste the address once.</strong> Save both requests in a collection and use <code>{{base_url}}</code> wherever the server address goes. An environment lets you swap that address for a different target.</li>
+<li><strong>Pass the ID automatically.</strong> The POST’s <strong>After response</strong> script saves the new ID. The GET reads it from <code>{{payment_id}}</code>.</li>
+<li><strong>Check the result.</strong> A test compares the returned ID to the one saved by the POST. Even a wrong-payment lookup can return <strong>200 OK</strong>.</li>
+<li><strong>Run both steps together.</strong> Collection Runner sends the POST first and the GET second. Ask AI can draft an extra decision check for you to review.</li></ol>
+<figure><a href="screenshots/chained-get.png"><img src="screenshots/chained-get.png" alt="Postman GET using base_url and payment_id, with 200 OK and a declined decision"></a><figcaption>The GET after adding variables. A successful lookup can return a declined payment.</figcaption></figure>
+</section>
+<section id="practice"><h2>Try it yourself</h2>
+<p>Allow 30–60 minutes. Build it from scratch to see what each change does, or import the completed workflow for a quick test run.</p>
+<details><summary>Set up the demo on Mac or Windows</summary>
+<ol>
+<li>Install <a href="https://nodejs.org/en/download">Node.js LTS</a> and the <a href="https://www.postman.com/downloads/">Postman desktop app</a>.</li>
+<li>Open Terminal on Mac or PowerShell on Windows. Run <code>node --version</code>. If the command is missing after installation, reopen the terminal and try again.</li>
+<li>Type <code>cd </code> followed by the path to the extracted project folder in quotes. Press Enter. Run <code>node api/server.js</code>.</li>
+<li>When you see <code>Demo API running at http://127.0.0.1:3100</code>, leave that window open and switch to Postman.</li>
+</ol></details>
+<h3>Build along</h3>
+<ol>
+<li>Try a blank GET for <code>http://127.0.0.1:3100/payments/pay_demo_001</code>. Then replace the ID with <code>pay_missing</code> and expect <strong>404</strong>.</li>
+<li>Follow the <a href="#manual">manual POST and GET example</a>. Try the POST without its token for <strong>401</strong>, then add the token and resend. Use the ID from your own response.</li>
+<li>Continue to <a href="#chain">variables and checks</a>, then <a href="#run">run the collection</a>.</li>
+</ol>
+<p><a href="#import">Import the finished workflow</a> if you want a ready-made version.</p>
+</section>
+<section id="chain"><h2>Save, reuse and check</h2>
+<ol><li>Save both requests to a collection. Set its <code>base_url</code> to <code>http://127.0.0.1:3100</code> and use <code>{{base_url}}</code> in both URLs so they share one address.</li>
+<li>Use <strong>Scripts → After response</strong> on the POST to save the newly returned ID. <strong>Before request</strong> runs before the response exists.</li>
+<li>Send the POST, then look up <code>{{base_url}}/payments/{{payment_id}}</code>. Add the GET check to verify that you got the intended payment.</li></ol>
+<details><summary>Show the ID capture and GET check</summary>
+<p>POST script</p><pre><code>pm.collectionVariables.unset("payment_id");
+
+if (pm.response.code === 201) {
+  const { paymentId } = pm.response.json();
+  if (paymentId) pm.collectionVariables.set("payment_id", paymentId);
+}</code></pre>
+<p>GET script</p><pre><code>pm.test("GET returns the payment created by POST", function () {
+  pm.response.to.have.status(200);
+
+  const expectedId = pm.collectionVariables.get("payment_id");
+  pm.expect(pm.response.json().paymentId).to.equal(expectedId);
+});</code></pre></details>
+<figure><a href="screenshots/collection-variables.png"><img loading="lazy" src="screenshots/collection-variables.png" alt="The collection holds the server address and the captured ID."></a><figcaption>The collection holds the server address and the captured ID.</figcaption></figure>
+<p>Temporarily look up <code>pay_demo_001</code> with the same test. The API returns <strong>200 OK</strong> and the test catches the wrong ID. Restore <code>{{payment_id}}</code> and resend.</p>
+<figure><a href="screenshots/wrong-payment.png"><img loading="lazy" src="screenshots/wrong-payment.png" alt="The lookup succeeds and the payment ID check fails."></a><figcaption>The lookup succeeds and the payment ID check fails.</figcaption></figure>
+</section>
+<section id="run"><h2>Run both requests together</h2><p>Open the collection menu and choose <strong>Run → Functional → Local</strong>. Put POST ahead of GET and start one iteration. At this stage, expect one passing test on the GET.</p>
+<figure><a href="screenshots/runner-correct-order.png"><img loading="lazy" src="screenshots/runner-correct-order.png" alt="Run POST first so the GET has a payment ID to use."></a><figcaption>Run POST first so the GET has a payment ID to use.</figcaption></figure>
+</section>
+<section id="ai"><h2>Review an AI-generated test</h2>
+<p>If Ask AI is available, ask it to preserve the POST ID capture and add checks for status <code>201</code> and the two expected decisions. In our first proposal, the fallback accepted any string for an unknown card token. We asked it to fail explicitly instead.</p>
+<figure><a href="screenshots/ai-fallback-review.png"><img loading="lazy" src="screenshots/ai-fallback-review.png" alt="The first proposal used a weak fallback for unknown card tokens."></a><figcaption>The first proposal used a weak fallback for unknown card tokens.</figcaption></figure>
+<details><summary>Show the finished POST script</summary><pre><code>// ── existing: clear &amp; save payment_id ──────────────────────────────────────
+pm.collectionVariables.unset("payment_id");
+
+if (pm.response.code === 201) {
+  const { paymentId } = pm.response.json();
+  pm.collectionVariables.set("payment_id", paymentId);
+}
+
+// ── status check ────────────────────────────────────────────────────────────
+pm.test("Status code is 201", function () {
+  pm.response.to.have.status(201);
+});
+
+// ── authorisationStatus matches cardToken ───────────────────────────────────
+pm.test("authorisationStatus matches cardToken", function () {
+  const cardToken = JSON.parse(pm.request.body.raw).cardToken;
+  const { authorisationStatus } = pm.response.json();
+
+  const expected = {
+    demo_approve: "approved",
+    demo_decline: "declined",
+  };
+
+  pm.expect(
+    expected,
+    `Unrecognised cardToken "${cardToken}" — add it to the expected map`
+  ).to.have.own.property(cardToken);
+
+  pm.expect(authorisationStatus).to.eql(
+    expected[cardToken],
+    `Expected authorisationStatus "${expected[cardToken]}" for cardToken "${cardToken}", got "${authorisationStatus}"`
+  );
+});</code></pre></details>
+<p>Send the POST with each demo card token. Each should have two passing tests. Rerun POST then GET for three passing tests.</p>
+</section>
+<section id="environment"><h2>Move the address into an environment</h2>
+<p>Create <strong>Local Demo</strong> with <code>base_url</code> set to <code>http://127.0.0.1:3100</code>. Select it at the top right. Remove the collection copy of <code>base_url</code> and keep <code>payment_id</code> there. Environments let the same requests use different server settings.</p>
+<p>API authentication checks the caller's credential. API authorisation controls access. Payment authorisation is the issuer's decision. APIs can also use API keys, Basic auth or OAuth 2.0. Use the scheme the API specifies.</p>
+<p>Use a secret store such as Postman Vault for real credentials. Keep them out of exports, screenshots, Git and AI prompts.</p>
+</section>
+<section id="import"><h2>Import the finished workflow</h2>
+<p>Download the <a download href="../postman/payments.postman_collection.json">collection</a> and <a download href="../postman/local-demo.postman_environment.json">Local Demo environment</a>. Use <strong>Import</strong> in a fresh Postman workspace. Start the API, select <strong>Local Demo</strong> and run POST then GET.</p>
+<figure><a href="screenshots/fresh-import-run.png"><img loading="lazy" src="screenshots/fresh-import-run.png" alt="Fresh import from GitHub with Local Demo selected and all three tests passing."></a><figcaption>Fresh import from GitHub with Local Demo selected and all three tests passing.</figcaption></figure>
+</section>
+</main>
+<script>
+const lessons = [...document.querySelectorAll('main > section')];
+const tabs = [...document.querySelectorAll('nav a')];
+const back = document.querySelector('#previous');
+const next = document.querySelector('#next');
+const progress = document.querySelector('#progress');
+let current = 0;
+
+function showLesson() {
+  const match = lessons.findIndex(lesson => '#' + lesson.id === location.hash);
+  current = match < 0 ? 0 : match;
+  lessons.forEach((lesson, index) => { lesson.hidden = index !== current; });
+  tabs.forEach((tab, index) => {
+    if (index === current) tab.setAttribute('aria-current', 'step');
+    else tab.removeAttribute('aria-current');
+  });
+  back.disabled = current === 0;
+  next.disabled = current === lessons.length - 1;
+  progress.textContent = 'Lesson ' + (current + 1) + ' of ' + lessons.length;
+}
+
+function move(offset) {
+  const lesson = lessons[current + offset];
+  if (lesson) location.hash = lesson.id;
+}
+
+back.addEventListener('click', () => move(-1));
+next.addEventListener('click', () => move(1));
+window.addEventListener('hashchange', showLesson);
+document.querySelector('.controls').hidden = false;
+showLesson();
+</script>
+</body></html>

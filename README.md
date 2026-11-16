@@ -140,3 +140,23 @@ An expected decline passes because the returned decision matches the scenario.
 Run the collection again with POST first and GET second. Expect **3 passed, 0 failed**. The POST checks the status and payment decision, and the GET checks that the lookup returns the payment created in the same run.
 
 [Runner results with all three checks](guide/screenshots/ai-runner-results.png)
+
+## Lesson 6 · Choose an environment
+
+An environment holds settings for a target such as local development or staging. Both requests can keep using `{{base_url}}` when you switch targets. The collection's `payment_id` tracks the payment created by the POST during the workflow.
+
+1. In **Environments**, create **Local Demo**. Add `base_url` with the value `http://127.0.0.1:3100`, save, and select **Local Demo** in the environment dropdown at the top right.
+2. Remove `base_url` from the collection's **Variables** tab so the requests depend on the selected environment. Keep `payment_id` in the collection and leave both request URLs as they are.
+3. With the API running, run the collection locally with **Local Demo** selected and **POST before GET**. Expect **201 Created**, **200 OK**, and **3 passed**.
+
+If `{{base_url}}` is unresolved, check that **Local Demo** is selected for the run and the variable is spelled correctly.
+
+[Local Demo variable setup](guide/screenshots/local-demo-variables.png) · [Runner using Local Demo with three passing tests](guide/screenshots/local-demo-run.png)
+
+### API credentials and payment decisions
+
+- **API authentication** checks the caller's credential. This demo POST expects `Authorization: Bearer demo-merchant-token`. **API authorisation** determines what the authenticated caller can do.
+- **Payment authorisation** is the issuer's approval or decline. In this demo, `cardToken` selects the simulated decision.
+- APIs can also use **API keys**, **Basic auth** (a username and password), or **OAuth 2.0**, which can issue scoped access tokens. Use the scheme the API documents.
+
+The demo token is safe to share. For real credentials, use a secret store such as Postman Vault. Keep real tokens and card data out of exports, screenshots, Git, and AI prompts. An environment variable is a way to supply a value. Store sensitive values separately.

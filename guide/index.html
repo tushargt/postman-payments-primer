@@ -198,9 +198,23 @@ pm.test("authorisationStatus matches cardToken", function () {
 <p>Send the POST with each demo card token. Each should have two passing tests. Rerun POST then GET for three passing tests.</p>
 </section>
 <section id="environment"><h2>Move the address into an environment</h2>
-<p>Create <strong>Local Demo</strong> with <code>base_url</code> set to <code>http://127.0.0.1:3100</code>. Select it at the top right. Remove the collection copy of <code>base_url</code> and keep <code>payment_id</code> there. Environments let the same requests use different server settings.</p>
+<p>A Postman environment is a named set of values for a particular target. Teams might use separate environments for development, QA, staging and production. Each can have a different server address, while the requests keep using <code>{{base_url}}</code>.</p>
+<ol>
+<li>In the left sidebar, find <strong>Environments</strong> and create a new environment named <strong>Local Demo</strong>.</li>
+<li>Add a variable named <code>base_url</code> with the value <code>http://127.0.0.1:3100</code> and save.</li>
+<li>Select <strong>Local Demo</strong> in the environment dropdown at the top right. Remove <code>base_url</code> from the collection variables and keep <code>payment_id</code> there.</li>
+</ol>
+<figure><a href="screenshots/environment-sidebar.png"><img loading="lazy" src="screenshots/environment-sidebar.png" alt="Postman sidebar with Local Demo under Environments, and its base_url set to the local server address."></a><figcaption>Local Demo appears under Environments in the left sidebar. Its variable table holds the address of the demo API.</figcaption></figure>
+<figure><a href="screenshots/local-demo-run.png"><img loading="lazy" src="screenshots/local-demo-run.png" alt="The Local Demo environment selected at the top right and three tests passing in the Runner."></a><figcaption>Check the top-right dropdown for Local Demo. Running POST then GET should give three passing tests.</figcaption></figure>
 <p>API authentication checks the caller's credential. API authorisation controls access. Payment authorisation is the issuer's decision. APIs can also use API keys, Basic auth or OAuth 2.0. Use the scheme the API specifies.</p>
-<p>Use a secret store such as Postman Vault for real credentials. Keep them out of exports, screenshots, Git and AI prompts.</p>
+<details><summary>Store a real bearer token securely</summary>
+<ol>
+<li>Open <strong>Vault → Local Vault</strong> from the Postman footer and add a secret named <code>merchant-token</code>. Paste the real token into the Vault’s value field.</li>
+<li>In the request, go to <strong>Authorization → Bearer Token</strong>. Enter <code>{{vault:merchant-token}}</code> in the Token field. Postman uses the stored value when it sends the request.</li>
+</ol>
+<p>The collection stores the reference. Local Vault stores the token on your device. Keep real token values out of exports, screenshots, Git and AI prompts. You can keep using the fake <code>demo-merchant-token</code> for this exercise.</p>
+<p><a href="https://learning.postman.com/docs/use/postman-vault/use-vault-secrets/">Postman’s guide to using Vault secrets</a></p>
+</details>
 </section>
 <section id="import"><h2>Import the finished workflow</h2>
 <p>Download the <a download href="../postman/payments.postman_collection.json">collection</a> and <a download href="../postman/local-demo.postman_environment.json">Local Demo environment</a>. Use <strong>Import</strong> in a fresh Postman workspace. Start the API, select <strong>Local Demo</strong> and run POST then GET.</p>

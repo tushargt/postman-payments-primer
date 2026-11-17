@@ -68,12 +68,22 @@ async function createPayment(request, response) {
 }
 
 const server = http.createServer((request, response) => {
-  const { pathname } = new URL(request.url, 'http://localhost');
+  const { pathname, searchParams } = new URL(request.url, 'http://localhost');
   if (pathname === '/payments') {
     if (request.method === 'POST') {
       return createPayment(request, response);
     }
-    return sendJson(response, 405, { error: 'Use POST to create a payment' }, { Allow: 'POST' });
+    if (request.method === 'GET') {
+      const status = searchParams.get('status');
+      if (status !== null && status !== 'approved' && status !== 'declined') {
+        return sendJson(response, 400, { error: 'status must be approved or declined' });
+      }
+      const results = [...payments.values()].filter(
+        payment => status === null || payment.authorisationStatus === status
+      );
+      return sendJson(response, 200, results);
+    }
+    return sendJson(response, 405, { error: 'Use GET or POST for payments' }, { Allow: 'GET, POST' });
   }
 
   const match = pathname.match(/^\/payments\/([^/]+)$/);

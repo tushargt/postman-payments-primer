@@ -170,3 +170,9 @@ Use **Import** in Postman to import both the [collection](postman/payments.postm
 Start the API, select **Local Demo**, and run the imported collection locally with **POST before GET**. Expect **3 passed, 0 failed**. The imported `payment_id` starts empty. The POST fills it in during the run. The POST defaults to `demo_approve`. Change the body to `demo_decline` to try the other outcome.
 
 [Example run after importing both files from GitHub](guide/screenshots/fresh-import-run.png)
+
+## Optional exercise · Filter payments
+
+In a new GET request, enter `http://127.0.0.1:3100/payments`. Add `status` = `approved` under **Params**. Postman appends `?status=approved` to the URL. Expect **200 OK** and a JSON list containing only approved attempts. Try `declined`, or remove the parameter to list all attempts. An unsupported value returns **400 Bad Request**.
+
+The ID in `GET /payments/{paymentId}` is a path parameter that selects one payment. The status in `GET /payments?status=approved` is a query parameter that filters a list.

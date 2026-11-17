@@ -30,55 +30,84 @@ nav a[aria-current="step"]{font-weight:bold;text-decoration-thickness:3px}
 table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:.9rem}
 th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding:.45rem;overflow-wrap:anywhere}
 .flow li{margin:.6rem 0 .6rem 1.4rem}
+
+.workspace-map{position:relative;display:block}
+.map-pin{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:50%;background:#ddf4af;color:#173b32;font-size:.75rem;font-weight:800;pointer-events:none}
+.map-key{padding-left:1.4rem}
 </style>
 </head>
 <body><main>
 <header>
 <p>Postman Payments Primer</p>
 <h1>Did this payment get approved?</h1>
-<p>Take a five-minute tour to see the payment flow. Then follow along in Postman when you’re ready.</p>
+<p>Harbour Books is a fictional shop. Our demo app runs on your computer and acts like a payment gateway. Use Postman to send a pretend A$24.99 payment, see whether it was approved, and look it up using the ID you got back. No money moves.</p>
+<p>Click through the five-minute tour in your browser. When you’re ready to try it yourself, <a href="#practice">follow the local setup</a>.</p>
 <nav aria-label="Lessons"><a href="#story">Story</a><a href="#requests">API calls</a><a href="#manual">Manual demo</a><a href="#improve">Improvements</a><a href="#practice">Follow along</a><a href="#chain">Variables</a><a href="#run">Runner</a><a href="#ai">Ask AI</a><a href="#environment">Environment</a><a href="#import">Import</a></nav>
 </header>
 <div class="controls" hidden><button type="button" id="previous">Back</button><span id="progress" aria-live="polite"></span><button type="button" id="next">Next</button></div>
 <section id="story"><h2>A shopper pays A$24.99. Was it approved?</h2>
-<p>You’re on the merchant’s team. Your checkout has sent a payment request. You want to see the decision and confirm you’re looking at the right payment.</p>
+<p>You’re on the Harbour Books checkout team. Your checkout has sent a payment request. You want to see the decision and confirm you’re looking at the right payment.</p>
 <ol class="flow">
 <li><strong>Merchant → Gateway · POST /payments</strong><br>Submit the payment attempt.</li>
 <li><strong>Gateway ↔ Issuer</strong><br>The card issuer decides whether to approve it. Our local demo simulates that decision.</li>
 <li><strong>Gateway → Merchant</strong><br>Return a payment ID and the decision.</li>
 <li><strong>Merchant → Gateway · GET /payments/{paymentId}</strong><br>Use the ID to look up that same payment.</li>
 </ol></section>
-<section id="requests"><h2>What goes into each request?</h2>
+<section id="requests"><h2>Find your way around Postman</h2>
+<p class="flow">Workspace → Collection → Requests (optionally grouped in folders)</p>
+<p>A workspace is where you organise your API work. A collection saves related requests so you can reopen or run them together. You can send a new HTTP request before saving it to a collection.</p>
+<figure>
+<a class="workspace-map" href="screenshots/workspace-hierarchy.png" aria-label="Open the full workspace screenshot">
+<img loading="lazy" src="screenshots/workspace-hierarchy.png" alt="My Workspace with the expanded Postman Payments Primer collection and Local Demo selected.">
+<span class="map-pin" style="left:13%;top:1.8%" aria-hidden="true">1</span>
+<span class="map-pin" style="left:16%;top:17.6%" aria-hidden="true">2</span>
+<span class="map-pin" style="left:15%;top:22%" aria-hidden="true">3</span>
+<span class="map-pin" style="left:89%;top:6.2%" aria-hidden="true">4</span>
+</a>
+<figcaption><ol class="map-key">
+<li><strong>Workspace</strong> The top-left selector shows where you’re working.</li>
+<li><strong>Collection</strong> Postman Payments Primer groups related requests in the sidebar.</li>
+<li><strong>Requests</strong> Create payment (POST) and Look up payment (GET) sit inside the collection. You can group requests into optional folders as a collection grows.</li>
+<li><strong>Active environment</strong> Choose Local Demo in the top-right dropdown. Edit its values under Environments in the sidebar.</li>
+</ol></figcaption></figure>
+<h3>What goes into each request?</h3>
 <p>Both calls go to <code>http://127.0.0.1:3100</code>, the mock gateway running on your computer.</p>
-<table><thead><tr><th scope="col">Part</th><th scope="col">POST creates</th><th scope="col">GET looks up</th></tr></thead><tbody>
-<tr><th scope="row">Path</th><td><code>/payments</code></td><td><code>/payments/{paymentId}</code></td></tr>
-<tr><th scope="row">Parameters</th><td>None</td><td>Payment ID in the path. No query parameters.</td></tr>
-<tr><th scope="row">Body</th><td>JSON with the amount in cents, currency and demo card token</td><td>None</td></tr>
-<tr><th scope="row">Auth</th><td>Bearer token <code>demo-merchant-token</code></td><td>None for this demo</td></tr>
-</tbody></table>
+<p><strong>POST /payments.</strong> Harbour Books sends the amount in cents, currency, and demo card token as JSON in the request body. It sends the merchant credential in the Authorization header.</p>
+<p><strong>GET /payments/{paymentId}.</strong> Harbour Books asks for one recorded payment by adding its ID to the URL. The demo GET needs neither a request body nor credentials.</p>
 <pre><code>{
   "amountMinor": 2499,
   "currency": "AUD",
   "cardToken": "demo_approve"
 }</code></pre>
-<p>The bearer token lets the merchant call the demo API. The card token selects a simulated issuer decision. Those values serve different purposes.</p></section>
+<p>When Harbour Books calls the gateway, authentication checks its credential and API authorisation controls what it can do. The demo checks one fixed bearer token and returns 401 if it is missing or wrong. The card token selects a simulated issuer decision. Those values serve different purposes.</p></section>
 <section id="manual"><h2>See the manual Postman flow</h2>
 <p>Sample walkthrough. You can read both examples without running the API.</p>
 <h3>1. Create a payment</h3>
 <p>In a blank Postman tab, select <strong>POST</strong> and paste <code>http://127.0.0.1:3100/payments</code>. In <strong>Body → raw → JSON</strong>, enter the body from the previous slide. Under <strong>Authorization → Bearer Token</strong>, enter <code>demo-merchant-token</code> and send.</p>
 <pre><code>201 Created
 {
-  "paymentId": "pay_223402da-f6a9-4504-81fa-a7217498d920",
+  "paymentId": "pay_0c972162-e79a-4dfe-be1f-614fc197d09e",
   "amountMinor": 2499,
   "currency": "AUD",
   "authorisationStatus": "approved"
 }</code></pre>
-<h3>2. Copy the ID into a lookup</h3>
-<p>Open another blank tab, select <strong>GET</strong> and paste the full URL with the ID you just received.</p>
-<pre><code>GET http://127.0.0.1:3100/payments/pay_223402da-f6a9-4504-81fa-a7217498d920
+<figure><a href="screenshots/manual-post-no-auth.png"><img loading="lazy" src="screenshots/manual-post-no-auth.png" alt="POST /payments with No Auth selected returns 401 Unauthorized and asks for a valid demo bearer token."></a><figcaption>Try sending with No Auth first. The gateway returns 401 Unauthorized because it needs the merchant credential. Then choose Bearer Token and send the same body again.</figcaption></figure>
+<figure><a href="screenshots/manual-post-auth.png"><img loading="lazy" src="screenshots/manual-post-auth.png" alt="Choose Bearer Token and enter the fake merchant credential."></a><figcaption>Choose Bearer Token and enter the fake merchant credential.</figcaption></figure>
+<figure><a href="screenshots/manual-post-body.png"><img loading="lazy" src="screenshots/manual-post-body.png" alt="The POST returns 201 Created and a paymentId in the response body."></a><figcaption>The POST returns 201 Created and a paymentId in the response body.</figcaption></figure>
+<h3>2. Copy the ID from the POST response into the GET URL</h3>
+<p>Open another blank tab, select <strong>GET</strong> and paste the full URL with the <code>paymentId</code> you copied from the <strong>POST response body</strong>. Use the ID from your own POST when following along.</p>
+<pre><code>GET http://127.0.0.1:3100/payments/pay_0c972162-e79a-4dfe-be1f-614fc197d09e
 
 200 OK
 Same payment ID, amount and approval decision</code></pre>
+<figure><a href="screenshots/manual-get.png"><img loading="lazy" src="screenshots/manual-get.png" alt="The GET URL uses the ID from the POST response, and the GET response shows the same ID with 200 OK."></a><figcaption>The GET URL uses the ID from the POST response, and the GET response shows the same ID with 200 OK.</figcaption></figure>
+<details><summary>Try it · Filter payments with a query parameter</summary>
+<p>A <strong>path parameter</strong> selects one record. In <code>/payments/{paymentId}</code>, use the ID from the POST response. A <strong>query parameter</strong> supplies an option after <code>?</code>.</p>
+<p>Harbour Books wants to see only approved attempts. Open a new GET for <code>http://127.0.0.1:3100/payments</code>. Under <strong>Params</strong>, enter <code>status</code> as the key and <code>approved</code> as the value.</p>
+<pre><code>GET http://127.0.0.1:3100/payments?status=approved</code></pre>
+<figure><a href="screenshots/query-status-approved.png"><img loading="lazy" src="screenshots/query-status-approved.png" alt="Postman Params shows status set to approved. The request returns 200 OK and a list containing pay_demo_001."></a><figcaption>Postman adds the filter to the URL. The square brackets in the response show that the result is a list, even when only one payment matches.</figcaption></figure>
+<p>Expect <strong>200 OK</strong> and a list that includes the preloaded approved payment. Change the value to <code>declined</code> to see only declined attempts. An empty list means none match. Clear the Params row to see all attempts.</p>
+</details>
 <p><strong>201 Created</strong> means the POST recorded a payment attempt, even for a decline. <strong>200 OK</strong> means the GET found the record. The decision lives in <code>authorisationStatus</code>.</p>
 </section>
 <section id="improve"><h2>Make the same flow repeatable</h2>
@@ -92,9 +121,10 @@ Same payment ID, amount and approval decision</code></pre>
 <p>Allow 30–60 minutes. Build it from scratch to see what each change does, or import the completed workflow for a quick test run.</p>
 <details><summary>Set up the demo on Mac or Windows</summary>
 <ol>
+<li><a href="https://github.com/tushargt/postman-payments-primer/archive/refs/heads/main.zip">Download the project ZIP</a> and unzip it. No Git commands or GitHub account are needed for a public download. If you’re on the repository page, choose <strong>Code → Download ZIP</strong>.</li>
 <li>Install <a href="https://nodejs.org/en/download">Node.js LTS</a> and the <a href="https://www.postman.com/downloads/">Postman desktop app</a>.</li>
 <li>Open Terminal on Mac or PowerShell on Windows. Run <code>node --version</code>. If the command is missing after installation, reopen the terminal and try again.</li>
-<li>Type <code>cd </code> followed by the path to the extracted project folder in quotes. Press Enter. Run <code>node api/server.js</code>.</li>
+<li>Find the extracted folder that contains <code>api</code> and <code>guide</code>. In Terminal or PowerShell, type <code>cd </code> followed by that folder’s path in quotes, then press Enter. Run <code>node api/server.js</code>.</li>
 <li>When you see <code>Demo API running at http://127.0.0.1:3100</code>, leave that window open and switch to Postman.</li>
 </ol></details>
 <h3>Build along</h3>

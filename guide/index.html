@@ -34,6 +34,11 @@ th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding
 .workspace-map{position:relative;display:block}
 .map-pin{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:1.35rem;height:1.35rem;border-radius:50%;background:#ddf4af;color:#173b32;font-size:.75rem;font-weight:800;pointer-events:none}
 .map-key{padding-left:1.4rem}
+.payment-map{display:grid;gap:.65rem;background:#e9f2dd;padding:1rem;border-radius:8px}
+.payment-node{background:white;border:1px solid #a8c0af;border-radius:8px;padding:.65rem;text-align:center}
+.payment-link{text-align:center;font-size:.88rem;overflow-wrap:anywhere}
+@media(min-width:760px){.payment-map{grid-template-columns:1fr 1.45fr 1fr 1.3fr 1fr;align-items:center}}
+.tour-choices{border-top:1px solid #ccd8cf;padding-top:.8rem}
 </style>
 </head>
 <body><main>
@@ -47,12 +52,14 @@ th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding
 <div class="controls" hidden><button type="button" id="previous">Back</button><span id="progress" aria-live="polite"></span><button type="button" id="next">Next</button></div>
 <section id="story"><h2>A shopper pays A$24.99. Was it approved?</h2>
 <p>You’re on the Harbour Books checkout team. Your checkout has sent a payment request. You want to see the decision and confirm you’re looking at the right payment.</p>
-<ol class="flow">
-<li><strong>Merchant → Gateway · POST /payments</strong><br>Submit the payment attempt.</li>
-<li><strong>Gateway ↔ Issuer</strong><br>The card issuer decides whether to approve it. Our local demo simulates that decision.</li>
-<li><strong>Gateway → Merchant</strong><br>Return a payment ID and the decision.</li>
-<li><strong>Merchant → Gateway · GET /payments/{paymentId}</strong><br>Use the ID to look up that same payment.</li>
-</ol></section>
+<div class="payment-map" role="group" aria-label="Payment flow">
+<div class="payment-node"><strong>Harbour Books</strong><br>Merchant</div>
+<div class="payment-link"><strong>POST</strong> <code>/payments</code> submits the attempt.<br><strong>GET</strong> <code>/payments/{paymentId}</code> looks it up.</div>
+<div class="payment-node"><strong>Payment gateway</strong><br>Returns the ID and decision</div>
+<div class="payment-link">The gateway requests a decision and gets back approval or decline.</div>
+<div class="payment-node"><strong>Card issuer</strong><br>The institution that issued the card</div>
+</div>
+<p>In Postman, you play Harbour Books and send the two requests to the local gateway. The demo simulates the issuer’s decision.</p></section>
 <section id="requests"><h2>Find your way around Postman</h2>
 <p class="flow">Workspace → Collection → Requests (optionally grouped in folders)</p>
 <p>A workspace is where you organise your API work. A collection saves related requests so you can reopen or run them together. You can send a new HTTP request before saving it to a collection.</p>
@@ -83,7 +90,13 @@ th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding
 <section id="manual"><h2>See the manual Postman flow</h2>
 <p>Sample walkthrough. You can read both examples without running the API.</p>
 <h3>1. Create a payment</h3>
-<p>In a blank Postman tab, select <strong>POST</strong> and paste <code>http://127.0.0.1:3100/payments</code>. In <strong>Body → raw → JSON</strong>, enter the body from the previous slide. Under <strong>Authorization → Bearer Token</strong>, enter <code>demo-merchant-token</code> and send.</p>
+<p>In a blank Postman tab, select <strong>POST</strong> and paste <code>http://127.0.0.1:3100/payments</code>. In <strong>Body → raw → JSON</strong>, paste this request body.</p>
+<pre><code>{
+  "amountMinor": 2499,
+  "currency": "AUD",
+  "cardToken": "demo_approve"
+}</code></pre>
+<p>Under <strong>Authorization</strong>, try <strong>No Auth</strong> first. Then switch to <strong>Bearer Token</strong>, enter <code>demo-merchant-token</code>, and send again.</p>
 <pre><code>201 Created
 {
   "paymentId": "pay_0c972162-e79a-4dfe-be1f-614fc197d09e",
@@ -93,14 +106,14 @@ th,td{text-align:left;vertical-align:top;border-bottom:1px solid #ccd8cf;padding
 }</code></pre>
 <figure><a href="screenshots/manual-post-no-auth.png"><img loading="lazy" src="screenshots/manual-post-no-auth.png" alt="POST /payments with No Auth selected returns 401 Unauthorized and asks for a valid demo bearer token."></a><figcaption>Try sending with No Auth first. The gateway returns 401 Unauthorized because it needs the merchant credential. Then choose Bearer Token and send the same body again.</figcaption></figure>
 <figure><a href="screenshots/manual-post-auth.png"><img loading="lazy" src="screenshots/manual-post-auth.png" alt="Choose Bearer Token and enter the fake merchant credential."></a><figcaption>Choose Bearer Token and enter the fake merchant credential.</figcaption></figure>
-<figure><a href="screenshots/manual-post-body.png"><img loading="lazy" src="screenshots/manual-post-body.png" alt="The POST returns 201 Created and a paymentId in the response body."></a><figcaption>The POST returns 201 Created and a paymentId in the response body.</figcaption></figure>
+<figure><a href="screenshots/manual-post-body.png"><img loading="lazy" src="screenshots/manual-post-body.png" alt="The POST returns 201 Created and a paymentId in the response body."></a><figcaption>201 Created means the gateway recorded the payment attempt. The response body contains its ID and the approval decision.</figcaption></figure>
 <h3>2. Copy the ID from the POST response into the GET URL</h3>
 <p>Open another blank tab, select <strong>GET</strong> and paste the full URL with the <code>paymentId</code> you copied from the <strong>POST response body</strong>. Use the ID from your own POST when following along.</p>
 <pre><code>GET http://127.0.0.1:3100/payments/pay_0c972162-e79a-4dfe-be1f-614fc197d09e
 
 200 OK
 Same payment ID, amount and approval decision</code></pre>
-<figure><a href="screenshots/manual-get.png"><img loading="lazy" src="screenshots/manual-get.png" alt="The GET URL uses the ID from the POST response, and the GET response shows the same ID with 200 OK."></a><figcaption>The GET URL uses the ID from the POST response, and the GET response shows the same ID with 200 OK.</figcaption></figure>
+<figure><a href="screenshots/manual-get.png"><img loading="lazy" src="screenshots/manual-get.png" alt="The GET URL uses the ID from the POST response, and the GET response shows the same ID with 200 OK."></a><figcaption>200 OK means the lookup succeeded. The matching payment ID confirms that you found the attempt created by the POST.</figcaption></figure>
 <details><summary>Try it · Filter payments with a query parameter</summary>
 <p>A <strong>path parameter</strong> selects one record. In <code>/payments/{paymentId}</code>, use the ID from the POST response. A <strong>query parameter</strong> supplies an option after <code>?</code>.</p>
 <p>Harbour Books wants to see only approved attempts. Open a new GET for <code>http://127.0.0.1:3100/payments</code>. Under <strong>Params</strong>, enter <code>status</code> as the key and <code>approved</code> as the value.</p>
@@ -116,6 +129,7 @@ Same payment ID, amount and approval decision</code></pre>
 <li><strong>Check the result.</strong> A test compares the returned ID to the one saved by the POST. Even a wrong-payment lookup can return <strong>200 OK</strong>.</li>
 <li><strong>Run both steps together.</strong> Collection Runner sends the POST first and the GET second. Ask AI can draft an extra decision check for you to review.</li></ol>
 <figure><a href="screenshots/chained-get.png"><img src="screenshots/chained-get.png" alt="Postman GET using base_url and payment_id, with 200 OK and a declined decision"></a><figcaption>The GET after adding variables. A successful lookup can return a declined payment.</figcaption></figure>
+<div class="tour-choices"><h3>End of the five-minute tour</h3><p><a href="#practice">Try it yourself</a> to build the requests step by step, or <a href="#import">import the finished workflow</a> for a quick run.</p></div>
 </section>
 <section id="practice"><h2>Try it yourself</h2>
 <p>Allow 30–60 minutes. Build it from scratch to see what each change does, or import the completed workflow for a quick test run.</p>
@@ -239,7 +253,10 @@ function showLesson() {
   });
   back.disabled = current === 0;
   next.disabled = current === lessons.length - 1;
-  progress.textContent = 'Lesson ' + (current + 1) + ' of ' + lessons.length;
+  const tourLength = lessons.findIndex(lesson => lesson.id === 'practice');
+  progress.textContent = current < tourLength
+    ? 'Tour ' + (current + 1) + ' of ' + tourLength
+    : 'Practice ' + (current - tourLength + 1) + ' of ' + (lessons.length - tourLength);
 }
 
 function move(offset) {
